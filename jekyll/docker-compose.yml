@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  web:
+    image: jekyll:latest  # Replace with your Jekyll website's image
+    networks:
+      - public
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.port=80"
+        - "traefik.frontend.rule=Host:example.com,www.example.com"
+        - "traefik.backend=mysite"
+        - "traefik.docker.network=public"
+
+networks:
+  public:
+    external: true

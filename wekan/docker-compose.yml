@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  wekandb:
+    image: mongo:3.2.17
+    command: mongod --smallfiles --oplogSize 128
+    networks:
+      - default
+    volumes:
+      - /var/data/realtime/wekan/db:/data/db
+      - /var/data/wekan/db:/dump
+  wekan:
+    image: wekanteam/wekan:latest
+    environment:
+      - PORT=9001
+      - MONGO_URL=mongodb://wekandb:27017/wekan
+      - ROOT_URL=https://kanban.example.com
+      - MAIL_URL=smtp://noreply:xxxxxx@mail.example.com:25/
+      - MAIL_FROM='Wekan <noreply@example.com>'
+    networks:
+      - default
+      - public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.port=9001"
+        - "traefik.backend=wekan"
+        - "traefik.docker.network=public"
+        - "traefik.frontend.entryPoints=http,https"
+        - "traefik.frontend.rule=Host:kanban.example.com"
+  db-backup:
+    image: mongo:3.2.17
+    volumes:
+      - /var/data/wekan/db:/dump
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - BACKUP_FREQUENCY=1d
+      - BACKUP_NUM_KEEP=7
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+      trap "break;exit" SIGHUP SIGINT SIGTERM
+      sleep 2m
+      while /bin/true; do
+        mongodump -h wekandb --gzip --archive=/dump/dump_\`date +%d-%m-%Y"_"%H_%M_%S\`.mongo.gz
+        (ls -t /dump/dump*.mongo.gz|head -n $$BACKUP_NUM_KEEP;ls /dump/dump*.mongo.gz)|sort|uniq -u|xargs rm -- {}
+        sleep $$BACKUP_FREQUENCY
+      done
+      EOF'
+    networks:
+      - default
+
+networks:
+  public:
+    external: true

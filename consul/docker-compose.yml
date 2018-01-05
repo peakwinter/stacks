@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  consul:
+    image: progrium/consul
+    command: -server -bootstrap -log-level debug -ui-dir /ui
+    ports:
+      - "8400:8400"
+      - "8500:8500"
+      - "8600:53/udp"
+    networks:
+      - consul
+
+
+networks:
+  consul:
+    external: true

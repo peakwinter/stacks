@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  nzbget:
+    image: linuxserver/nzbget
+    networks:
+      - public
+    volumes:
+      - /var/data/nzb/nzbget_config:/config
+      - /var/data/realtime/nzb/downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=nzbget"
+        - "traefik.frontend.rule=Host:nzbget.example.com"
+        - "traefik.port=6789"
+        - "traefik.docker.network=public"
+  sonarr:
+    image: linuxserver/sonarr:latest
+    networks:
+      - public
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/rtc:/dev/rtc:ro
+      - /var/nas/Videos/TV:/tv
+      - /var/data/nzb/sonarr_config:/config
+      - /var/data/realtime/nzb/downloads:/downloads
+    environment:
+      - PUID=1000
+      - PGID=1000
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=sonarr"
+        - "traefik.frontend.rule=Host:sonarr.example.com"
+        - "traefik.port=8989"
+        - "traefik.docker.network=public"
+
+networks:
+  public:
+    external: true

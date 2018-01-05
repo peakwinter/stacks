@@ -1,0 +1,37 @@
+defaultEntryPoints = ["http", "https"]
+logLevel = "DEBUG"
+
+# This section enable LetsEncrypt automatic certificate generation / renewal
+[acme]
+email = "mail@example.com"
+storage = "traefik/acme/account"
+storageFile = "acme.json"
+entryPoint = "https"
+acmeLogging = true
+onDemand = true
+OnHostRule = true
+
+# Redirect all HTTP to HTTPS (why wouldn't you?)
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+      entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+
+[web]
+address = ":8080"
+watch = true
+
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+domain = "example.com"
+watch = true
+swarmmode = true
+
+[consul]
+endpoint = "consul_consul:8500"
+watch = true
+prefix = "traefik"
