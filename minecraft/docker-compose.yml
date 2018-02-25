@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  spigot:
+    image: nimmis/spigot
+    networks:
+      - public
+    ports:
+      - "25565:25565"
+    environment:
+      - SPIGOT_VER=1.12.1
+      - EULA=true
+      - MC_MAXMEM=2g  # Limit maximum memory consumption
+    volumes:
+      - "/var/data/minecraft/data:/minecraft"
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=minecraft_dynmap"
+        - "traefik.frontend.rule=Host:mine.example.com"
+        - "traefik.port=8123"
+        - "traefik.docker.network=public"
+
+networks:
+  public:
+    external: true
