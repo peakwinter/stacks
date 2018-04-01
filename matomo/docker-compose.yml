@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb
+    volumes:
+      - /var/data/realtime/matomo/db:/var/lib/mysql
+    environment:
+      - "MYSQL_ROOT_PASSWORD=example"
+  app:
+    image: piwik:3-fpm
+    volumes:
+      - /var/data/matomo/config:/var/www/html/config
+    depends_on:
+      - db
+  web:
+    image: nginx:alpine
+    volumes:
+      - /var/data/matomo/nginx.conf:/etc/nginx/conf.d/matomo.conf:ro
+    depends_on:
+      - app
+    networks:
+      - default
+      - public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.port=80"
+        - "traefik.backend=matomo"
+        - "traefik.docker.network=public"
+        - "traefik.frontend.entryPoints=http,https"
+        - "traefik.frontend.rule=Host:matomo.example.com"
+  cron:
+    image: piwik:fpm
+    volumes:
+      - /var/data/matomo/config:/var/www/html/config
+    depends_on:
+      - db
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+      trap "break;exit" SIGHUP SIGINT SIGTERM
+      while /bin/true; do
+        su -s "/bin/bash" -c "/usr/local/bin/php /var/www/html/console core:archive" www-data
+        sleep 3600
+      done
+      EOF'
+
+
+networks:
+  public:
+    external: true
